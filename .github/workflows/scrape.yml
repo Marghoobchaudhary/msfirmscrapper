@@ -1,13 +1,13 @@
 name: Scrape Bids Online PDF
 
 on:
-  workflow_dispatch: {}   # run on button click
+  workflow_dispatch: {}   # Allow manual trigger
   schedule:
-    # Runs every day at 06:30 UTC (≈ 11:30 Asia/Karachi). Change as you like.
-    - cron: "30 6 * * *"
+    # Run at minute 30, every 8 hours (00:30, 08:30, 16:30 UTC)
+    - cron: "30 */8 * * *"
 
 permissions:
-  contents: write   # needed to push the updated JSON
+  contents: write   # Needed to push updated JSON
 
 jobs:
   scrape:
@@ -35,7 +35,6 @@ jobs:
 
       - name: Run scraper
         env:
-          # You can override these if needed:
           BIDSONLINE_URL: https://www.msfirm.com/bids/bidsonline.pdf
           OUT_PATH: bids.json
         run: |
