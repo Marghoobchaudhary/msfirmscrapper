@@ -1,0 +1,55 @@
+name: Scrape Bids Online PDF
+
+on:
+  workflow_dispatch: {}   # run on button click
+  schedule:
+    # Runs every day at 06:30 UTC (≈ 11:30 Asia/Karachi). Change as you like.
+    - cron: "30 6 * * *"
+
+permissions:
+  contents: write   # needed to push the updated JSON
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Java (for tabula-py)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          # You can override these if needed:
+          BIDSONLINE_URL: https://www.msfirm.com/bids/bidsonline.pdf
+          OUT_PATH: bids.json
+        run: |
+          python scraper.py
+
+      - name: Commit & push if changed
+        run: |
+          set -e
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add bids.json
+            git commit -m "chore: update bids.json [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
