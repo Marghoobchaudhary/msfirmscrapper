@@ -8,7 +8,7 @@ import tabula  # requires Java (JDK)
 PDF_URL = os.environ.get("BIDSONLINE_URL", "https://www.msfirm.com/bids/bidsonline.pdf")
 OUT_PATH = os.environ.get("OUT_PATH", "bids.json")
 
-# Counties you want to keep (canonical, all lowercase)
+# Keep ONLY these counties (canonical, all lowercase)
 ALLOWED_CANONICAL = {
     "st. louis county",
     "st. charles county",
@@ -18,6 +18,7 @@ ALLOWED_CANONICAL = {
     "jackson county (kansas city)",
     "jackson county (independent)",
 }
+
 # Pretty display for final JSON
 PRETTY_COUNTY = {
     "st. louis county": "St. Louis County",
@@ -29,7 +30,6 @@ PRETTY_COUNTY = {
     "jackson county (independent)": "Jackson County (independent)",
 }
 
-
 # --------- Helpers ---------
 def _clean_ws(s: str) -> str:
     """Normalize weird whitespace like non-breaking spaces, CR/LF, double spaces."""
@@ -38,7 +38,6 @@ def _clean_ws(s: str) -> str:
     s = str(s).replace("\u00A0", " ").replace("\r", " ").replace("\n", " ")
     s = re.sub(r"\s+", " ", s)
     return s.strip()
-
 
 def canonicalize_county(raw: str):
     """
@@ -49,16 +48,12 @@ def canonicalize_county(raw: str):
     if not raw:
         return None
     s = _clean_ws(raw).lower()
-
     # unify 'st louis' -> 'st. louis' and 'st charles' -> 'st. charles'
-    s = s.replace("st louis", "st. louis")
-    s = s.replace("st charles", "st. charles")
-
+    s = s.replace("st louis", "st. louis").replace("st charles", "st. charles")
     # normalize parentheses spacing
     s = s.replace(" (", "(").replace("( ", "(").replace(") ", ")")
     s = _clean_ws(s)
-
-    # normalize the jackson county flavors
+    # normalize jackson county flavors
     if s.startswith("jackson county"):
         if "(kansas city)" in s:
             s = "jackson county (kansas city)"
@@ -66,9 +61,7 @@ def canonicalize_county(raw: str):
             s = "jackson county (independent)"
         else:
             s = "jackson county"
-
     return s
-
 
 def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Map many possible header variants to a consistent schema."""
@@ -101,11 +94,10 @@ def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = clean_cols
     return df
 
-
 def split_datetime(val):
-    """Return (date, time) from a 'MM/DD/YYYY HH:MM AM/PM' string; tolerate partials."""
+    """Return (date, time) from 'MM/DD/YYYY HH:MM AM/PM'; tolerate partials."""
     if not isinstance(val, str):
-        return None, None
+        return "", ""
     val = _clean_ws(val)
     m = re.search(r"(\d{1,2}/\d{1,2}/\d{4})\s+(\d{1,2}:\d{2}\s?(?:AM|PM)?)", val, re.IGNORECASE)
     if m:
@@ -113,21 +105,42 @@ def split_datetime(val):
     # sometimes only date appears
     m2 = re.search(r"\d{1,2}/\d{1,2}/\d{4}", val)
     if m2:
-        return m2.group(0), None
-    return None, None
-
+        return m2.group(0), ""
+    return "", ""
 
 def parse_bid(val):
     """Normalize currency strings like '$146,881.95' -> '146881.95'."""
     if val is None:
-        return None
+        return ""
     s = str(val).strip()
     s = s.replace("$", "").replace(",", " ")
     s = re.sub(r"\s+", "", s)
     if not re.search(r"\d", s):
-        return None
+        return ""
     return s
 
+def parse_address(addr: str):
+    """
+    Best-effort split of a full address into (PropAddress, PropCity, PropZip).
+    We expect formats like: '123 Main St, Springfield, MO 63101'
+    """
+    addr = _clean_ws(addr)
+    if not addr:
+        return "", "", ""
+    # Try to capture zip (last 5 digits)
+    zip_match = re.search(r"(\d{5})(?:-\d{4})?$", addr)
+    prop_zip = zip_match.group(1) if zip_match else ""
+    # Remove state + zip if present
+    without_state_zip = re.sub(r",?\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?$", "", addr)
+    # Split remaining by comma
+    parts = [p.strip() for p in without_state_zip.split(",") if p.strip()]
+    if len(parts) >= 2:
+        prop_address = ", ".join(parts[:-1])
+        prop_city = parts[-1]
+    else:
+        prop_address = parts[0] if parts else addr
+        prop_city = ""
+    return prop_address, prop_city, prop_zip
 
 # --------- Main scrape ---------
 def scrape():
@@ -148,48 +161,45 @@ def scrape():
             sale_date, sale_time = split_datetime(row.get("sale_datetime"))
             cont_date, cont_time = split_datetime(row.get("continued_datetime"))
 
+            county_raw = "" if pd.isna(row.get("county")) else _clean_ws(row.get("county"))
+            ccanon = canonicalize_county(county_raw)
+
+            # Keep only requested counties
+            if ccanon not in ALLOWED_CANONICAL:
+                continue
+
+            # Address split
+            addr_raw = "" if pd.isna(row.get("property_address")) else _clean_ws(row.get("property_address"))
+            prop_address, prop_city, prop_zip = parse_address(addr_raw)
+
+            # Build output in your requested structure with empty strings for missing data
             rec = {
-                "sale_date": sale_date,
-                "sale_time": sale_time,
-                "continued_date": cont_date,
-                "continued_time": cont_time,
-                "case_number": None if pd.isna(row.get("case_number")) else _clean_ws(row.get("case_number")),
-                "county": None if pd.isna(row.get("county")) else _clean_ws(row.get("county")),
-                "property_address": None if pd.isna(row.get("property_address")) else _clean_ws(row.get("property_address")),
-                "ms_file": None if pd.isna(row.get("ms_file")) else _clean_ws(row.get("ms_file")),
-                "bid": parse_bid(row.get("bid")),
-                "auction_vendor": None if pd.isna(row.get("auction_vendor")) else _clean_ws(row.get("auction_vendor")),
+                "Trustee": "MS Firm",
+                "Sale_date": sale_date or "",
+                "Sale_time": sale_time or "",
+                "FileNo": "" if pd.isna(row.get("ms_file")) else _clean_ws(row.get("ms_file")),
+                "PropAddress": prop_address,
+                "PropCity": prop_city,
+                "PropZip": prop_zip,
+                "County": PRETTY_COUNTY.get(ccanon, county_raw),
+                "OpeningBid": parse_bid(row.get("bid")),
+                "vendor": "" if pd.isna(row.get("auction_vendor")) else _clean_ws(row.get("auction_vendor")),
+                "status- DROP DOWN": "",
+                "Foreclosure Status": "",
             }
 
-            # Merge separate auction/vendor columns if present
-            if "auction" in t.columns or "vendor" in t.columns:
-                a = "" if "auction" not in t.columns or pd.isna(row.get("auction")) else _clean_ws(row.get("auction"))
-                v = "" if "vendor" not in t.columns or pd.isna(row.get("vendor")) else _clean_ws(row.get("vendor"))
-                if (a or v) and not rec.get("auction_vendor"):
-                    rec["auction_vendor"] = " ".join([a, v]).strip()
+            # Add continued_date ONLY if present (omit when empty)
+            if cont_date:
+                rec["continued_date"] = cont_date
+            # (You asked specifically for continued_date; if you also want continued_time, add similarly.)
 
-            # Keep rows that have at least some signal (avoid footers)
-            if any(rec.get(k) for k in ("county", "ms_file", "case_number", "property_address")):
-                # ---- County filter here ----
-                ccanon = canonicalize_county(rec.get("county"))
-                if ccanon in ALLOWED_CANONICAL:
-                    rec["county"] = PRETTY_COUNTY.get(ccanon, rec.get("county"))
-                    all_records.append(rec)
+            all_records.append(rec)
 
-    # Final light cleanup: remove obvious headers/footers that slipped through
-    cleaned = []
-    for r in all_records:
-        c = (r.get("county") or "").lower()
-        if "millsap & singer" in c or "sale date" in c:
-            continue
-        cleaned.append(r)
-
-    # Write filtered JSON
+    # Final light cleanup: (no nulls by construction)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(cleaned, f, indent=2, ensure_ascii=False)
+        json.dump(all_records, f, indent=2, ensure_ascii=False)
 
-    print(f"Wrote {len(cleaned)} filtered records to {OUT_PATH}")
-
+    print(f"Wrote {len(all_records)} filtered records to {OUT_PATH}")
 
 if __name__ == "__main__":
     scrape()
