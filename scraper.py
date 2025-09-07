@@ -2,13 +2,12 @@ import os
 import re
 import json
 import pandas as pd
-import tabula
+import tabula  # Java-based table extractor
 
 PDF_URL = os.environ.get("BIDSONLINE_URL", "https://www.msfirm.com/bids/bidsonline.pdf")
 OUT_PATH = os.environ.get("OUT_PATH", "bids.json")
 
 def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Map many possible header variants to a consistent schema."""
     clean = []
     for c in df.columns:
         cl = str(c).strip().lower().replace("\n", " ").replace("\r", " ")
@@ -25,7 +24,7 @@ def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
             clean.append("property_address")
         elif "ms file" in cl:
             clean.append("ms_file")
-        elif cl == "bid" or "bid" in cl:
+        elif "bid" in cl:
             clean.append("bid")
         elif "auction" in cl and "vendor" in cl:
             clean.append("auction_vendor")
@@ -44,38 +43,33 @@ def split_datetime(val):
     m = re.search(r"(\d{1,2}/\d{1,2}/\d{4})\s+(\d{1,2}:\d{2}\s?(AM|PM)?)", val, re.IGNORECASE)
     if m:
         return m.group(1), m.group(2).upper().replace("  ", " ")
-    return val, None  # sometimes Tabula gives only date or only time here
+    # sometimes only date or only time appears
+    return (val.strip() if isinstance(val, str) else None), None
 
 def parse_bid(val):
     if val is None:
         return None
     s = str(val)
-    # Remove currency and commas, compress spaces
     s = s.replace("$", "").replace(",", " ")
     s = re.sub(r"\s+", "", s)
-    # Keep digits and dot
     if not re.search(r"\d", s):
         return None
     return s
 
 def scrape():
-    # Extract table-like data from all pages
     tables = tabula.read_pdf(PDF_URL, pages="all", multiple_tables=True, stream=True, guess=True)
     tables = [t for t in tables if t is not None and len(t) > 0]
 
     all_records = []
     for t in tables:
-        # Drop fully-empty rows
         t = t.dropna(how="all")
         t = standardize_columns(t)
 
-        # Some PDFs repeat headers as the first row; try to detect & skip
+        # drop repeated header rows if present
         if len(t) and any("sale" in str(x).lower() for x in t.iloc[0].tolist()):
-            # Heuristic: if the first row looks like headers, remove it
             t = t.iloc[1:].reset_index(drop=True)
 
         for _, row in t.iterrows():
-            # Build a robust record with graceful fallbacks
             sale_date, sale_time = split_datetime(row.get("sale_datetime"))
             cont_date, cont_time = split_datetime(row.get("continued_datetime"))
 
@@ -92,25 +86,22 @@ def scrape():
                 "auction_vendor": None if pd.isna(row.get("auction_vendor")) else str(row.get("auction_vendor")).strip(),
             }
 
-            # Merge separate auction/vendor columns if present
             if "auction" in t.columns or "vendor" in t.columns:
                 a = "" if "auction" not in t.columns or pd.isna(row.get("auction")) else str(row.get("auction")).strip()
                 v = "" if "vendor" not in t.columns or pd.isna(row.get("vendor")) else str(row.get("vendor")).strip()
                 if (a or v) and not rec.get("auction_vendor"):
                     rec["auction_vendor"] = " ".join([a, v]).strip()
 
-            # Keep rows that have at least a county or ms_file or case_number (avoid footers)
             if any(rec.get(k) for k in ("county", "ms_file", "case_number", "property_address")):
                 all_records.append(rec)
 
-    # Final light cleanup: remove obvious headers/footers that slipped through
+    # remove obvious footers/headers if they slip in
     cleaned = []
     for r in all_records:
         if r.get("county") and ("Millsap & Singer" in r["county"] or "Sale Date" in r["county"]):
             continue
         cleaned.append(r)
 
-    os.makedirs(os.path.dirname(OUT_PATH) or ".", exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(cleaned, f, indent=2, ensure_ascii=False)
 
