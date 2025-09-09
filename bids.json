@@ -23,7 +23,7 @@
     "PropCity": "",
     "PropZip": "",
     "County": "Jackson County",
-    "OpeningBid": "163876.91",
+    "OpeningBid": "165046.31",
     "vendor": "",
     "status- DROP DOWN": "",
     "Foreclosure Status": ""
@@ -375,20 +375,6 @@
     "County": "St. Louis City",
     "OpeningBid": "0.00",
     "vendor": "",
-    "status- DROP DOWN": "",
-    "Foreclosure Status": ""
-  },
-  {
-    "Trustee": "MS Firm",
-    "Sale_date": "9/19/2025",
-    "Sale_time": "9:00 AM",
-    "FileNo": "227406.091925.456586 FC",
-    "PropAddress": "",
-    "PropCity": "",
-    "PropZip": "",
-    "County": "St. Louis County",
-    "OpeningBid": "0.00",
-    "vendor": "ServiceLink - Hudson",
     "status- DROP DOWN": "",
     "Foreclosure Status": ""
   },
