@@ -121,7 +121,7 @@
     "PropCity": "",
     "PropZip": "",
     "County": "Jackson County",
-    "OpeningBid": "0.00",
+    "OpeningBid": "214328.00",
     "vendor": "",
     "status- DROP DOWN": "",
     "Foreclosure Status": ""
@@ -389,6 +389,20 @@
     "County": "St. Louis County",
     "OpeningBid": "0.00",
     "vendor": "",
+    "status- DROP DOWN": "",
+    "Foreclosure Status": ""
+  },
+  {
+    "Trustee": "MS Firm",
+    "Sale_date": "9/25/2025",
+    "Sale_time": "2:00 PM",
+    "FileNo": "216088.439346 JFC",
+    "PropAddress": "",
+    "PropCity": "",
+    "PropZip": "",
+    "County": "Jackson County",
+    "OpeningBid": "0.00",
+    "vendor": "Xome",
     "status- DROP DOWN": "",
     "Foreclosure Status": ""
   },
