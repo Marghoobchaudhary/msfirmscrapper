@@ -16,48 +16,6 @@
   },
   {
     "Trustee": "MS Firm",
-    "Sale_date": "9/11/2025",
-    "Sale_time": "9:00 AM",
-    "FileNo": "228662.091125.459101 FC",
-    "PropAddress": "",
-    "PropCity": "",
-    "PropZip": "",
-    "County": "Jackson County",
-    "OpeningBid": "342924.00",
-    "vendor": "",
-    "status- DROP DOWN": "",
-    "Foreclosure Status": ""
-  },
-  {
-    "Trustee": "MS Firm",
-    "Sale_date": "9/11/2025",
-    "Sale_time": "9:00 AM",
-    "FileNo": "228787.091125.459345 FC",
-    "PropAddress": "",
-    "PropCity": "",
-    "PropZip": "",
-    "County": "Jackson County",
-    "OpeningBid": "0.00",
-    "vendor": "Auction.com",
-    "status- DROP DOWN": "",
-    "Foreclosure Status": ""
-  },
-  {
-    "Trustee": "MS Firm",
-    "Sale_date": "9/11/2025",
-    "Sale_time": "3:00 PM",
-    "FileNo": "228806.091125.459372 FC",
-    "PropAddress": "",
-    "PropCity": "",
-    "PropZip": "",
-    "County": "St. Louis City",
-    "OpeningBid": "0.00",
-    "vendor": "ServiceLink - Hudson",
-    "status- DROP DOWN": "",
-    "Foreclosure Status": ""
-  },
-  {
-    "Trustee": "MS Firm",
     "Sale_date": "9/12/2025",
     "Sale_time": "9:00 AM",
     "FileNo": "225779.091225.453487 FC",
@@ -250,7 +208,8 @@
     "OpeningBid": "0.00",
     "vendor": "",
     "status- DROP DOWN": "",
-    "Foreclosure Status": ""
+    "Foreclosure Status": "",
+    "continued_date": "09/25/2025"
   },
   {
     "Trustee": "MS Firm",
@@ -403,6 +362,48 @@
     "County": "Jackson County",
     "OpeningBid": "0.00",
     "vendor": "Xome",
+    "status- DROP DOWN": "",
+    "Foreclosure Status": ""
+  },
+  {
+    "Trustee": "MS Firm",
+    "Sale_date": "9/26/2025",
+    "Sale_time": "9:00 AM",
+    "FileNo": "228995.092625.459694 FC",
+    "PropAddress": "",
+    "PropCity": "",
+    "PropZip": "",
+    "County": "St. Louis County",
+    "OpeningBid": "0.00",
+    "vendor": "Auction.com",
+    "status- DROP DOWN": "",
+    "Foreclosure Status": ""
+  },
+  {
+    "Trustee": "MS Firm",
+    "Sale_date": "9/26/2025",
+    "Sale_time": "1:00 PM",
+    "FileNo": "223715.449856 JFC",
+    "PropAddress": "",
+    "PropCity": "",
+    "PropZip": "",
+    "County": "St. Charles County",
+    "OpeningBid": "0.00",
+    "vendor": "Auction.com",
+    "status- DROP DOWN": "",
+    "Foreclosure Status": ""
+  },
+  {
+    "Trustee": "MS Firm",
+    "Sale_date": "9/12/2025",
+    "Sale_time": "1:00 PM",
+    "FileNo": "218057.437566 KYFC",
+    "PropAddress": "",
+    "PropCity": "",
+    "PropZip": "",
+    "County": "Jefferson County",
+    "OpeningBid": "65682.10",
+    "vendor": "Auction.com",
     "status- DROP DOWN": "",
     "Foreclosure Status": ""
   }
